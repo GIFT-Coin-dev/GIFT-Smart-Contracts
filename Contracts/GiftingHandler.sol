@@ -1707,71 +1707,47 @@ interface IGiftingHandler {
     
     //MANAGEMENT FUNCTIONS
     
-    function changeManager(address payable _manager) external;
-    function changeBuybackAdmin(address payable _buybackAdmin) external;
-    function changeRedeemer(address payable _redeemer) external;
-    function changeAdmin(address payable _admin) external;
-    function changeGiftToken(address _token) external;
-    function changeBuybackPool(address payable _pool) external;
-    function changeChainlinkFee(uint256 _fee) external;
-    function changeLotteryAdmin(address payable _lotteryAdmin) external;
+    //BUYBACK
     function giftBuyBack() external;
-    function addGiftTokenOption(uint256 _giftFee, uint256 _redeemRefundFee, uint256 _referralFee, uint256 _gasTopUp) external;
-    function changeGiftTokenOptionTokens(address[] memory _tokens, uint256[] memory _tokenWeight, uint256 _option) external;
-    function addGiftUsdVoucherOption() external;
-    function addGiftUsdVoucherRedeemOption(address[] memory _tokens, uint256[] memory _tokenWeights) external;
-    function changeGiftUsdVoucherRedeemOption(address[] memory _tokens, uint256[] memory _tokenWeights, uint256 _option) external;
-    function changeNFTCosts(uint256 _giftFee, uint256 _rederralFee, uint256 _redeemRefundFee, uint256 _gasTopUp) external;
     
     //GIFTING FUNCTIONS
     
+    //GIFTING
     function giftTokens(uint256 _option, bytes32 _hash, uint256 _referralID) external payable returns(uint256, uint256);
     function giftUsdVoucher(uint256 _option, bytes32 _hash, uint256 _referralID) external payable returns(uint256, uint256);
     function giftNFT(bytes32 _hash, uint256 _referralID, address _nftAddress, uint256 _nftID) external payable returns(uint256, uint256);
-    function redeemGiftedTokens(address payable _recipient, string memory _redemptionString, uint256 _giftID) external;
-    function redeemUSDVoucher(address payable _recipient, string memory _redemptionString, uint256 _giftID, uint256 _redeemUsdOption) external;
-    function redeemNFT(address payable _recipient, string memory _redemptionString, uint256 _giftID) external;
+    
+    //RECOVERING
     function recoverGiftedTokens(uint256 _giftID) external;
     function recoverUSDVoucher(uint256 _giftID) external;
     function recoverNFT(uint256 _giftID) external;
     
     //GIFTING VIEW FUNCTIONS
     
-    function viewTotalGifts() external view returns(uint256);
-    function viewGiftsRedeemed() external view returns(uint256);
+    //GIFT PACKAGES
     function viewGiftTokensOptionsLength() external view returns(uint256);
     function viewGiftedTokensOption(uint256 _option) external view returns(uint256, uint256, uint256, uint256, uint256, address[] memory, uint256[] memory);
     function viewGiftedTokens(uint256 _giftID) external view returns(uint256, bool);
     function viewGiftedTokensIndexes(address _sender) external view returns(uint256[] memory);
+    
+    //GIFT USD VOUCHERS
     function viewGiftedUSDVoucherOptionsLength() external view returns(uint256);
-    function viewGiftedUSDVoucherOption(uint256 _optionID) external view returns(uint256, uint256, uint256, uint256);
+    function viewGiftedUSDVoucherOption(uint256 _optionID) external view returns(uint256, uint256, uint256, uint256, uint256);
     function viewGiftedUSDVouchers(uint256 _giftID) external view returns(uint256, bool );
     function viewGiftedUSDVouchersIndexes(address _sender) external view returns(uint256[] memory);
+    
+    //GIFT NFTS
     function viewGiftedNFTs(uint256 _giftID) external view returns(address, uint256, bool);
     function viewGiftedNFTsIndexes(address _sender) external view returns(uint256[] memory);
     function viewGiftNFTCosts() external view returns(uint256, uint256, uint256, uint256);
-    
-    //REFERRAL FUNCTIONS 
-    
-    function registerReferrer() external payable returns (uint256);
-    function changeReferrerAddress(uint256 _UID, address payable _newAddress) external;
+
+    //REFERRAL FUNCTIONS
     function withdrawReferralFunds() external;
-    
-    //REFERRAL VIEW FUNCTIONS
-    
-    function queryReferrerByID(uint256 _UID) external view returns (address);
-    function queryReferrerByAddress(address _referrer) external view returns(uint256, uint256, uint256, uint256);
-    
-    //LOTTERY FUNCTIONS
-    
-    function getLotteryNumber() external;
-    function viewLotteryJackpot() external view returns(uint256);
-    function viewLotteryWinners() external view returns(address _sender, address _recipient);
-    
+    function queryReferrerByAddress(address _referrer) external view returns(uint256, uint256, uint256, uint256, uint256, bool);
     
 }
 
-contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, ReentrancyGuard {
+contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
    
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
@@ -1801,7 +1777,7 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     
     giftedTokens[] private giftedTokensArr;
     giftTokensOption[] private giftedTokensOptionsArr;
-    mapping(address => uint256[]) addyToGiftedTokensSent;
+    mapping(address => uint256[]) private addyToGiftedTokensSent;
     
     //GIFT USD VOUCHERS DATA
     
@@ -1827,7 +1803,7 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     
     giftedUsdVoucher[] private giftedUsdVoucherArr;
     giftUsdVoucherOption[] private giftUsdVoucherOptionArr;
-    mapping(address => uint256[]) addyToGiftedUsdVoucherSent;
+    mapping(address => uint256[]) private addyToGiftedUsdVoucherSent;
     
     struct redeemUsdVoucherOption {
         address[] tokens;
@@ -1854,23 +1830,17 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     uint256 NFTGasTopUp;
     
     giftedNFT[] private giftedNFTArr;
-    mapping(address => uint256[]) addyToGiftedNFTSent;
+    mapping(address => uint256[]) private addyToGiftedNFTSent;
     
     //LOTTERY DATA
     
-    struct lotteryEntry {
-        
-        address payable sender;
-        address payable recipient;
-        
-    }
-    lotteryEntry[] private entriesArr;
+    GIFTLottery lottery;
         
         
     //REFERRALS DATA
     
     struct referrer {
-        address payable referrerAddy;
+
         uint256 balance;
         uint256 totalEarned;
         uint256 referrals;
@@ -1882,16 +1852,10 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     mapping(uint256 => referrer) private UIDToReferrer;
     
     uint256 private currentID;
-    uint256 private registrationCost;        
     
     //BALANCE COUNTERS
     
     uint256 private bnbGiftFeesBalance;
-    uint256 private bnbRedeemRefundBalance;
-    uint256 private bnbReferralFeeBalance;
-    uint256 private bnbGasTopUpFeeBalance;
-    
-    uint256 private bnbGiftsBalance;
     
     //MANAGEMENT ADDRESSES
     
@@ -1899,7 +1863,6 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     address payable private manager;
     address payable private buybackAdmin;
     address payable private admin;
-    address payable private lotteryAdmin;
     
     //POOL ADDRESSES
     
@@ -1920,25 +1883,16 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     
     //COUNTERS
     
-    uint256 private redeemCounter;
+    uint256 public redeemCounter;
     uint256 private refundCounter;
-    uint256 private bnbGiftFeesAccrued;
-    
-    //CHAINLINK 
-    
-    bytes32 keyHash = 0xc251acd21ec4fb7f31bb8868288bfdbaeb4fbfec2df3735ddbd4f7dc8d60103c;
-    uint256 chainlinkFee;
+    uint256 public bnbGiftFeesAccrued;
     
     //CONSTRUCTOR 
     
-    constructor(address payable _redeemer, address payable _marketing, uint256 _registrationCost, address _giftToken) 
-            VRFConsumerBase(0x747973a5A2a4Ae1D3a8fDF5479f1514F65Db9C31, 0x404460C6A5EdE2D891e8297795264fDe62ADBB75) {
+    constructor(address payable _marketing, address _giftToken, uint256 _NFTRedeemRefund, uint256 _NFTGasTopUp)  {
         
         //Balance INITIALIZATION
 
-        bnbRedeemRefundBalance = 0;
-        bnbGasTopUpFeeBalance = 0;
-        bnbReferralFeeBalance = 0;
         bnbGiftFeesBalance = 0;
         
         //Counter INITIALIZATION
@@ -1947,20 +1901,20 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         redeemCounter = 0;
         refundCounter = 0;
         
-        //ChainlinkFee INITIALIZATION
+        //NFT INITIALIZATION
         
-        chainlinkFee = 0.2 * 10 ** 18;
+        NFTRedeemRefundFee = _NFTRedeemRefund;
+        NFTGasTopUp = _NFTGasTopUp;
         
         //MANAGER INITIALIZATION
-        redeemer = _redeemer;
+        redeemer = msg.sender;
         manager = msg.sender;
         buybackAdmin = msg.sender;
         
         //REFERAL INITIALIZATION;
         currentID = 2;
         refaddyToUID[_marketing] = 1;
-        UIDToReferrer[1] = referrer(_marketing, 0, 0, 0, 0);
-        registrationCost = _registrationCost;
+        UIDToReferrer[1] = referrer(0, 0, 0, 0);
         
         //PANCAKESWAP INITIALIZATION
         _pancakeRouter = IPancakeRouter02(PancakeRouter);
@@ -1968,6 +1922,8 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         //TOKEN INITIALIZATION
         giftTokenAddress = _giftToken;
         giftToken = IERC20(giftTokenAddress);
+        
+        lottery = new GIFTLottery(_giftToken, address(this), 0x747973a5A2a4Ae1D3a8fDF5479f1514F65Db9C31, 0x404460C6A5EdE2D891e8297795264fDe62ADBB75, 0xc251acd21ec4fb7f31bb8868288bfdbaeb4fbfec2df3735ddbd4f7dc8d60103c, 0.2 * 10 ** 18);
         
     }
     
@@ -1978,66 +1934,36 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         _;
     }
     
-    modifier onlyBuybackAdmin() {
-        require(msg.sender == buybackAdmin);
-        _;
-    }
-    
     modifier onlyRedeemer() {
         require(msg.sender == redeemer);
         _;
     }
     
-    modifier onlyAdmin() {
-        require(msg.sender == admin);
-        _;
-    }
-    
-    modifier onlyLotteryAdmin() {
-        require(msg.sender == lotteryAdmin);
-        _;
-    }
-    
-    function changeManager(address payable _manager) onlyManager external override {
+    function changeManager(address payable _manager) onlyManager external  {
         manager = _manager;
     }
     
-    function changeBuybackAdmin(address payable _buybackAdmin) onlyManager external override {
+    function changeAdmins(address payable _buybackAdmin, address payable _redeemer) onlyManager external  {
+        
         buybackAdmin = _buybackAdmin;
-    }
-    
-    function changeRedeemer(address payable _redeemer) onlyManager external override {
         redeemer = _redeemer;
     }
-    
-    function changeAdmin(address payable _admin) onlyManager external override {
-        admin = _admin;
-    }
 
-    function changeGiftToken(address _token) external onlyManager override {
+    function changeGiftTokenAndPool(address _token, address payable _pool) external onlyManager  {
         giftTokenAddress = _token;
         giftToken = IERC20(giftTokenAddress);
-    }
-    
-    function changeBuybackPool(address payable _pool) external onlyManager override {
         buybackPool = _pool;
-    }
-    
-    function changeChainlinkFee(uint256 _fee) external onlyManager override {
-        chainlinkFee = _fee * 10 ** 18;
-    }
-    
-    function changeLotteryAdmin(address payable _lotteryAdmin) onlyManager external override {
-        lotteryAdmin = _lotteryAdmin;
     }
     
     //BUYBACK ADMIN
     
-    function giftBuyBack() external onlyBuybackAdmin override {
+    function giftBuyBack() external override {
         
+        require(msg.sender == buybackAdmin);
         require(bnbGiftFeesBalance > 0, "NO FEES IN BALANCE");
         address[] memory path = new address[](2);
         path[0] = _pancakeRouter.WETH();
+        path[1] = giftTokenAddress;
         
         _pancakeRouter.swapExactETHForTokensSupportingFeeOnTransferTokens{value: bnbGiftFeesBalance} (
             0,
@@ -2046,33 +1972,41 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
             block.timestamp+10
             );
         
+        bnbGiftFeesAccrued = bnbGiftFeesAccrued + bnbGiftFeesBalance;
+        bnbGiftFeesBalance = 0;
         
     }
     
     //ADMIN
     
-    function addGiftTokenOption(uint256 _giftFee, uint256 _redeemRefundFee, uint256 _referralFee, uint256 _gasTopUp) external onlyAdmin override {
-        
+    function addGiftTokenOption(uint256 _giftFee, uint256 _redeemRefundFee, uint256 _referralFee, uint256 _gasTopUp, uint256 _giftAmount, uint256 _bnbCost, address[] memory _tokens, uint256[] memory _tokenWeights) external onlyManager  {
+        giftedTokensOptionsArr.push(giftTokensOption(_giftFee, _redeemRefundFee, _referralFee, _gasTopUp, _giftAmount, _bnbCost, _tokens, _tokenWeights));
     }
     
-    function changeGiftTokenOptionTokens(address[] memory _tokens, uint256[] memory _tokenWeight, uint256 _option) external onlyAdmin override {
-        
+    function changeGiftTokenOptionTokens(address[] memory _tokens, uint256[] memory _tokenWeights, uint256 _option) external onlyManager  {
+        require(_option < giftedTokensOptionsArr.length, "INVALID OPTION");
+        giftedTokensOptionsArr[_option].tokens = _tokens;
+        giftedTokensOptionsArr[_option].tokenWeights = _tokenWeights;
     }
     
-    function addGiftUsdVoucherOption() external onlyAdmin override {
+    function addGiftUsdVoucherOption(uint256 _giftFee, uint256 _redeemRefundFee, uint256 _referralFee, uint256 _gasTopUp, uint256 _giftAmount, uint256 _bnbCost) external onlyManager  {
         
+        giftUsdVoucherOptionArr.push(giftUsdVoucherOption(_giftFee, _redeemRefundFee, _referralFee, _gasTopUp, _giftAmount, _bnbCost));
     }
     
-    function addGiftUsdVoucherRedeemOption(address[] memory _tokens, uint256[] memory _tokenWeights) external onlyAdmin override {
-        
+    function addGiftUsdVoucherRedeemOption(address[] memory _tokens, uint256[] memory _tokenWeights) external onlyManager  {
+        redeemUsdVoucherOptionArr.push(redeemUsdVoucherOption(_tokens, _tokenWeights));
     }
     
-    function changeGiftUsdVoucherRedeemOption(address[] memory _tokens, uint256[] memory _tokenWeights, uint256 _option) external onlyAdmin override {
-        
+    function changeGiftUsdVoucherRedeemOption(address[] memory _tokens, uint256[] memory _tokenWeights, uint256 _option) external onlyManager  {
+        require(_option < redeemUsdVoucherOptionArr.length, "INVALID OPTION");
+        redeemUsdVoucherOptionArr[_option].tokens = _tokens;
+        redeemUsdVoucherOptionArr[_option].tokenWeights = _tokenWeights;
     }
     
-    function changeNFTCosts(uint256 _giftFee, uint256 _rederralFee, uint256 _redeemRefundFee, uint256 _gasTopUp) external onlyAdmin override {
-        
+    function changeNFTCosts(uint256 _giftFee, uint256 _referralFee) external onlyManager  {
+        NFTGiftFee = _giftFee;
+        NFTReferralFee = _referralFee;
     }
     
     
@@ -2084,9 +2018,8 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         require(msg.value == giftedTokensOptionsArr[_option].BnbCost, "INCORRECT COST");
         
         giftedTokensArr.push(giftedTokens(_option, msg.sender, _hash, false));
-        
-        addBalances(giftedTokensOptionsArr[_option].giftFee, giftedTokensOptionsArr[_option].redeemRefundFee, giftedTokensOptionsArr[_option].referralFee, giftedTokensOptionsArr[_option].gasTopUp);
-        bnbGiftsBalance = bnbGiftsBalance + giftedTokensOptionsArr[_option].giftAmount;
+        addyToGiftedTokensSent[msg.sender].push(giftedTokensArr.length-1);
+        bnbGiftFeesBalance = bnbGiftFeesBalance.add(giftedTokensOptionsArr[_option].giftFee);
        
         return(giftedTokensArr.length-1, payReferrer(_referralID, giftedTokensOptionsArr[_option].referralFee));
        
@@ -2101,9 +2034,8 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
             
         busdToken.safeTransferFrom(msg.sender, address(this), giftUsdVoucherOptionArr[_option].giftAmount);
         giftedUsdVoucherArr.push(giftedUsdVoucher(_option, msg.sender, _hash, false));
-        
-        addBalances(giftUsdVoucherOptionArr[_option].giftFee, giftUsdVoucherOptionArr[_option].redeemRefundFee, giftUsdVoucherOptionArr[_option].referralFee, giftUsdVoucherOptionArr[_option].gasTopUp);
-        
+        addyToGiftedUsdVoucherSent[msg.sender].push(giftedUsdVoucherArr.length-1);
+        bnbGiftFeesBalance = bnbGiftFeesBalance.add(giftUsdVoucherOptionArr[_option].giftFee);
         
         return(giftedUsdVoucherArr.length-1, payReferrer(_referralID, giftUsdVoucherOptionArr[_option].referralFee));
     }
@@ -2115,24 +2047,15 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         
         IERC721(_nftAddress).safeTransferFrom(msg.sender, address(this), _nftID);
         giftedNFTArr.push(giftedNFT(msg.sender, _nftAddress, _nftID, _hash, false));
-        
-        addBalances(NFTGiftFee, NFTRedeemRefundFee, NFTReferralFee, NFTGasTopUp);
+        bnbGiftFeesBalance = bnbGiftFeesBalance.add(NFTGiftFee);
         
         return(giftedNFTArr.length-1, payReferrer(_referralID, NFTReferralFee));
         
     }
     
-    function addBalances(uint256 _a, uint256 _b, uint256 _c, uint256 _d) internal {
-        
-        bnbGiftFeesBalance = bnbGiftFeesBalance.add(_a);
-        bnbRedeemRefundBalance = bnbRedeemRefundBalance.add(_b);
-        bnbReferralFeeBalance = bnbReferralFeeBalance.add(_c);
-        bnbGasTopUpFeeBalance = bnbGasTopUpFeeBalance.add(_d);   
-    }
-    
     //REDEEMING SECTION
     
-    function redeemGiftedTokens(address payable _recipient, string memory _redemptionString, uint256 _giftID) external nonReentrant override onlyRedeemer {
+    function redeemGiftedTokens(address payable _recipient, string memory _redemptionString, uint256 _giftID) external nonReentrant onlyRedeemer {
 
         require(_giftID < giftedTokensArr.length, "NOT VALID GIFT");
         require(giftedTokensArr[_giftID].redeemed == false, "GIFT REDEEMED");
@@ -2144,13 +2067,17 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         for(uint256 i = 0; i<giftedTokensOptionsArr[giftedTokensArr[_giftID].option].tokens.length; i++) {
                 
             path[1] = giftedTokensOptionsArr[giftedTokensArr[_giftID].option].tokens[i];  //ChosenToken
-        
-            _pancakeRouter.swapExactETHForTokensSupportingFeeOnTransferTokens{value: (giftedTokensOptionsArr[giftedTokensArr[_giftID].option].tokenWeights[i].mul(giftedTokensOptionsArr[giftedTokensArr[_giftID].option].giftAmount)).div(100)}(
-            0,
-            path,
-            _recipient,
-            block.timestamp+10
-            );
+            
+            if (path[0] == path[1]) {
+                _recipient.transfer(giftedTokensOptionsArr[giftedTokensArr[_giftID].option].tokenWeights[i].mul(giftedTokensOptionsArr[giftedTokensArr[_giftID].option].giftAmount).div(100));
+            } else {
+                _pancakeRouter.swapExactETHForTokensSupportingFeeOnTransferTokens{value: (giftedTokensOptionsArr[giftedTokensArr[_giftID].option].tokenWeights[i].mul(giftedTokensOptionsArr[giftedTokensArr[_giftID].option].giftAmount)).div(100)}(
+                0,
+                path,
+                _recipient,
+                block.timestamp+10
+                );                
+            }
                 
                         
         }
@@ -2160,7 +2087,7 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         
     }
     
-    function redeemUSDVoucher(address payable _recipient, string memory _redemptionString, uint256 _giftID, uint256 _redeemUsdOption) external nonReentrant onlyRedeemer override {
+    function redeemUSDVoucher(address payable _recipient, string memory _redemptionString, uint256 _giftID, uint256 _redeemUsdOption) external nonReentrant onlyRedeemer  {
 
         require(_giftID < giftedUsdVoucherArr.length, "NOT VALID GIFT");
         require(giftedUsdVoucherArr[_giftID].redeemed == false, "GIFT REDEEMED");
@@ -2189,7 +2116,7 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         
     }
     
-    function redeemNFT(address payable _recipient, string memory _redemptionString, uint256 _giftID) external nonReentrant onlyRedeemer override {
+    function redeemNFT(address payable _recipient, string memory _redemptionString, uint256 _giftID) external nonReentrant onlyRedeemer  {
         
         require(_giftID < giftedNFTArr.length, "NOT VALID GIFT");
         require(giftedNFTArr[_giftID].redeemed == false, "GIFT REDEEMED");
@@ -2206,10 +2133,7 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         _bAdd.transfer(_a);
         msg.sender.transfer(_b);
         
-        bnbGasTopUpFeeBalance = bnbGasTopUpFeeBalance.sub(_a);
-        bnbRedeemRefundBalance = bnbRedeemRefundBalance.sub(_b);
-        
-        addToLottery(_aAdd, _bAdd);
+        lottery.addToLottery(_aAdd, _bAdd);
         redeemCounter++;
     }
     
@@ -2221,9 +2145,6 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         require(giftedTokensArr[_giftID].redeemed == false, "ALREADY REDEEMED");
         
         msg.sender.transfer(giftedTokensOptionsArr[giftedTokensArr[_giftID].option].giftAmount.add(giftedTokensOptionsArr[giftedTokensArr[_giftID].option].gasTopUp).add(giftedTokensOptionsArr[giftedTokensArr[_giftID].option].redeemRefundFee));
-        bnbRedeemRefundBalance = bnbRedeemRefundBalance - giftedTokensOptionsArr[giftedTokensArr[_giftID].option].redeemRefundFee;
-        bnbGasTopUpFeeBalance = bnbGasTopUpFeeBalance - giftedTokensOptionsArr[giftedTokensArr[_giftID].option].gasTopUp;
-        bnbGiftsBalance = bnbGiftsBalance - giftedTokensOptionsArr[giftedTokensArr[_giftID].option].giftAmount;
         
         giftedTokensArr[_giftID].redeemed = true;
         refundCounter ++;
@@ -2256,8 +2177,6 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     
     function recoverGasAndRefund(uint256 _a, uint256 _b) internal {
         msg.sender.transfer(_a.add(_b));
-        bnbRedeemRefundBalance = bnbRedeemRefundBalance - _a;
-        bnbGasTopUpFeeBalance = bnbGasTopUpFeeBalance - _b;
         refundCounter ++;
     }
     
@@ -2265,12 +2184,8 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     
     //VIEW GENERAL STATS
 
-    function viewTotalGifts() external view override returns(uint256) {
+    function viewTotalGifts() external view returns(uint256) {
         return(giftedTokensArr.length.add(giftedUsdVoucherArr.length).add(giftedNFTArr.length));
-    }
-  
-    function viewGiftsRedeemed() external view override returns(uint256) {
-        return(redeemCounter);
     }
     
     //VIEW TOKEN GIFT INFO
@@ -2280,7 +2195,7 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     }
     
     function viewGiftedTokensOption(uint256 _option) external view override returns(uint256, uint256, uint256, uint256, uint256, address[] memory, uint256[] memory) {
-        return(giftedTokensOptionsArr[_option].giftFee, giftedTokensOptionsArr[_option].referralFee, giftedTokensOptionsArr[_option].gasTopUp, giftedTokensOptionsArr[_option].redeemRefundFee, giftedTokensOptionsArr[_option].BnbCost, giftedTokensOptionsArr[_option].tokens, giftedTokensOptionsArr[_option].tokenWeights);
+        return(giftedTokensOptionsArr[_option].giftFee, giftedTokensOptionsArr[_option].referralFee, giftedTokensOptionsArr[_option].redeemRefundFee, giftedTokensOptionsArr[_option].gasTopUp, giftedTokensOptionsArr[_option].giftAmount, giftedTokensOptionsArr[_option].tokens, giftedTokensOptionsArr[_option].tokenWeights);
     }
     
     function viewGiftedTokens(uint256 _giftID) external view override returns(uint256, bool) {
@@ -2299,8 +2214,8 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         return(giftUsdVoucherOptionArr.length);
     }
     
-    function viewGiftedUSDVoucherOption(uint256 _optionID) external view override returns(uint256, uint256, uint256, uint256) {
-        return(giftUsdVoucherOptionArr[_optionID].giftFee, giftUsdVoucherOptionArr[_optionID].referralFee, giftUsdVoucherOptionArr[_optionID].gasTopUp, giftUsdVoucherOptionArr[_optionID].redeemRefundFee);
+    function viewGiftedUSDVoucherOption(uint256 _optionID) external view override returns(uint256, uint256, uint256, uint256, uint256) {
+        return(giftUsdVoucherOptionArr[_optionID].giftFee, giftUsdVoucherOptionArr[_optionID].referralFee, giftUsdVoucherOptionArr[_optionID].gasTopUp, giftUsdVoucherOptionArr[_optionID].redeemRefundFee, giftUsdVoucherOptionArr[_optionID].giftAmount);
     }    
     
     function viewGiftedUSDVouchers(uint256 _giftID) external view override returns(uint256, bool ) {
@@ -2312,6 +2227,14 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         
         return(addyToGiftedUsdVoucherSent[_sender]);
         
+    }
+    
+    function viewRedeemUSDVoucherOption(uint256 _optionID) external view returns(address[] memory, uint256[] memory) {
+        return(redeemUsdVoucherOptionArr[_optionID].tokens, redeemUsdVoucherOptionArr[_optionID].tokenWeights);
+    }
+    
+    function viewRedeemUSDVoucherOptionLength() external view returns(uint256) {
+        return(redeemUsdVoucherOptionArr.length);
     }
     
     //VIEW NFT GIFT INFO
@@ -2332,74 +2255,155 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
     //REFERRALS SECTION
     
     function payReferrer(uint256 _UID, uint256 _payment) internal returns(uint256){
+
+        if(customerToReferrerUID[msg.sender]==0) {
+
+            if(_UID == 0 || _UID >= currentID) {
+                customerToReferrerUID[msg.sender] = 1;
+            } else {
+                customerToReferrerUID[msg.sender] = _UID;
+            }
+            UIDToReferrer[customerToReferrerUID[msg.sender]].referrals++;
+        }
         
+        UIDToReferrer[customerToReferrerUID[msg.sender]].referralSales++;
+        UIDToReferrer[customerToReferrerUID[msg.sender]].balance = UIDToReferrer[customerToReferrerUID[msg.sender]].balance + _payment;
+
         if (refaddyToUID[msg.sender] == 0) {
-            
-            UIDToReferrer[_UID].balance = UIDToReferrer[_UID].balance + _payment;
-            UIDToReferrer[_UID].referrals ++;
-            return(internalRegister());
+
+            return(registerReferrer());
             
         } else {
-            
-            UIDToReferrer[_UID].balance = UIDToReferrer[_UID].balance + _payment;
-            UIDToReferrer[_UID].referrals ++;
+
             return(refaddyToUID[msg.sender]);
         }
     }
     
-    function registerReferrer() external payable override returns (uint256) {
+    function registerReferrer() public returns (uint256) {
         
         require(refaddyToUID[msg.sender]==0, "ALREADY REGISTERED");
-        require(msg.value == registrationCost);
         refaddyToUID[msg.sender]=currentID;
+        UIDToReferrer[currentID] = referrer(0,0,0,0);
         currentID++;
         return refaddyToUID[msg.sender];
         
     }
     
-    function internalRegister() internal returns(uint256) {
-        
-        require(refaddyToUID[msg.sender]==0, "ALREADY REGISTERED");
-        refaddyToUID[msg.sender]=currentID; 
-        currentID = currentID + 1;
-        return currentID;
-        
-    }
-    
-    function changeReferrerAddress(uint256 _UID, address payable _newAddress) external override {
-        require(msg.sender == UIDToReferrer[_UID].referrerAddy, "WRONG ADDRESS");
-        UIDToReferrer[_UID].referrerAddy = _newAddress;
+    function changeReferrerAddress(address payable _newAddress) external  {
+        require(refaddyToUID[msg.sender] != 0, "WRONG ADDRESS");
+        require(refaddyToUID[_newAddress] == 0, "NEW ADDRESS TAKEN");
+
+        refaddyToUID[_newAddress] = refaddyToUID[msg.sender];
+        refaddyToUID[msg.sender] = 0;
     }
     
     function withdrawReferralFunds() external nonReentrant override {
         
         require(refaddyToUID[msg.sender] != 0, "INVALID ADDRESS");
-        msg.sender.transfer(UIDToReferrer[refaddyToUID[msg.sender]].balance );
+        require(UIDToReferrer[refaddyToUID[msg.sender]].balance > 0, "BALANCE IS ZERO");
+        msg.sender.transfer(UIDToReferrer[refaddyToUID[msg.sender]].balance);
+        UIDToReferrer[refaddyToUID[msg.sender]].totalEarned = UIDToReferrer[refaddyToUID[msg.sender]].totalEarned + UIDToReferrer[refaddyToUID[msg.sender]].balance;
         UIDToReferrer[refaddyToUID[msg.sender]].balance = 0;
+         
+    }
+    
+    //Returns data for referrer by address, if address in unregistered returns false
+    function queryReferrerByAddress(address _referrer) external view override returns(uint256, uint256, uint256, uint256, uint256, bool) {
+        if(refaddyToUID[_referrer] == 0) {
+            return(0,0,0,0,0, false);
+        } else {
+            return(refaddyToUID[_referrer], UIDToReferrer[refaddyToUID[_referrer]].balance, UIDToReferrer[refaddyToUID[_referrer]].totalEarned, UIDToReferrer[refaddyToUID[_referrer]].referrals, UIDToReferrer[refaddyToUID[_referrer]].referralSales, true);
+
+        }
         
     }
+
+}
+
+contract GIFTLottery is VRFConsumerBase{
     
-    function queryReferrerByID(uint256 _UID) external view override returns (address) {
-        return UIDToReferrer[_UID].referrerAddy;
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
+    
+    struct lotteryEntry {
+        address payable sender;
+        address payable recipient;
     }
     
-    function queryReferrerByAddress(address _referrer) external view override returns(uint256, uint256, uint256, uint256) {
+    lotteryEntry[] private entriesArr;
+    address payable winner1;
+    address payable winner2;
+    
+    address handler;
+    address lotteryAdmin;
+    address manager;
+    
+    address private giftTokenAddress;
+    IERC20 private giftToken;
+    
+    //CHAINLINK 
+    
+    bytes32 keyHash;
+    uint256 chainlinkFee;
+    
+    constructor(address _giftToken, address _handler, address _vrfCoordinator, address _link, bytes32 _keyHash, uint256 _fee) VRFConsumerBase(_vrfCoordinator, _link) {
         
+        handler = _handler;
+        manager = tx.origin;
+        
+        //Chainlink INITIALIZATION
+        
+        chainlinkFee = _fee;
+        keyHash = _keyHash;
+        
+        giftTokenAddress = _giftToken;
+        giftToken = IERC20(giftTokenAddress);
     }
     
-    //LOTTERY SECTION
+    modifier onlyManager() {
+        require(msg.sender == manager, "NOT MANAGER");
+        _;
+    }
+
+    modifier onlyHandler() {
+        require(msg.sender == handler, "NOT HANDLER");
+        _;
+    }
     
-    function addToLottery(address payable _sender, address payable _redeemer ) internal {
+    modifier onlyLotteryAdmin() {
+        require(msg.sender == lotteryAdmin, "NOT LOTTERY ADMIN");
+        _;
+    }
+    
+    function changeManager(address _manager) onlyManager external {
+        manager = _manager;
+    }
+    
+    function changeLotteryAdmin(address _lotteryAdmin) onlyManager external {
+        lotteryAdmin = _lotteryAdmin;
+    }
+    
+    function changeChainlinkFee(uint256 _fee) external onlyManager  {
+        chainlinkFee = _fee * 10 ** 18;
+    }
+    
+    function changeGiftToken(address _giftToken) external onlyManager {
+        giftTokenAddress = _giftToken;
+        giftToken = IERC20(giftTokenAddress);
+    }
+
+    function addToLottery(address payable _sender, address payable _redeemer) external onlyHandler{
         
         entriesArr.push(lotteryEntry(_sender, _redeemer));
-        
     }
     
-    function getLotteryNumber() external onlyLotteryAdmin override {
+    //This function calls the VRF Chainlink Coordinator to get a random number for the draw
+    function getLotteryNumber() external onlyLotteryAdmin  {
         require(LINK.balanceOf(address(this)) >= chainlinkFee, "Not enough LINK - fill contract with faucet");
         requestRandomness(keyHash, chainlinkFee);
     }
     
+    //This function decides the lottery result, takes the random number, sets the winners, sends the rewards and resets the lottery entries array
     function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
         
         
@@ -2408,18 +2412,23 @@ contract GiftingHandler is IGiftingHandler, Ownable, VRFConsumerBase, Reentrancy
         uint256 winAmount = giftToken.balanceOf(address(this)).div(2);
         giftToken.safeTransfer(entriesArr[winnersIndex].sender, winAmount);
         giftToken.safeTransfer(entriesArr[winnersIndex].recipient, lotteryFund.sub(winAmount));
+        winner1 = entriesArr[winnersIndex].sender;
+        winner2 = entriesArr[winnersIndex].recipient;
         delete entriesArr;
         
     }
     
-    function viewLotteryJackpot() external view override returns(uint256) {
-        
-    }
-    
-    function viewLotteryWinners() external view override returns(address _sender, address _recipient) {
-        
-    }
-    
+    function viewLotteryJackpot() external view returns(uint256) {
 
+        return(giftToken.balanceOf(address(this)));
+        
+    }
+    
+    function viewLotteryWinners() external view returns(address payable _sender, address payable _recipient) {
+        
+        return(winner1, winner2);
+    }
+    
+    
 }
 
