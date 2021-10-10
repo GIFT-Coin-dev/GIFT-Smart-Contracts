@@ -46,9 +46,7 @@ contract Referrals is IReferrals, ReentrancyGuard {
         UIDToReferrer[1] = referrer(0, 0, 0, 0);
     }
     
-    function payReferrerAndRegister(uint256 _UID, uint256 _payment) external payable override returns(uint256){
-        
-        require(msg.value == _payment, "INCORRECT PAYMENT");
+    function payReferrerAndRegister(uint256 _UID) external payable override returns(uint256){
 
         if(customerToReferrerUID[msg.sender]==0) {
 
@@ -61,7 +59,7 @@ contract Referrals is IReferrals, ReentrancyGuard {
         }
         
         UIDToReferrer[customerToReferrerUID[msg.sender]].referralSales++;
-        UIDToReferrer[customerToReferrerUID[msg.sender]].balance = UIDToReferrer[customerToReferrerUID[msg.sender]].balance + _payment;
+        UIDToReferrer[customerToReferrerUID[msg.sender]].balance = UIDToReferrer[customerToReferrerUID[msg.sender]].balance + msg.value;
 
         if (refaddyToUID[msg.sender] == 0) {
 
@@ -73,9 +71,7 @@ contract Referrals is IReferrals, ReentrancyGuard {
         }
     }
 
-    function payReferrer(uint256 _UID, uint256 _payment) external payable override {
-        
-        require(msg.value == _payment, "INCORRECT PAYMENT");
+    function payReferrer(uint256 _UID) external payable override {
 
         if(customerToReferrerUID[msg.sender]==0) {
 
@@ -88,7 +84,7 @@ contract Referrals is IReferrals, ReentrancyGuard {
         }
         
         UIDToReferrer[customerToReferrerUID[msg.sender]].referralSales++;
-        UIDToReferrer[customerToReferrerUID[msg.sender]].balance = UIDToReferrer[customerToReferrerUID[msg.sender]].balance + _payment;
+        UIDToReferrer[customerToReferrerUID[msg.sender]].balance = UIDToReferrer[customerToReferrerUID[msg.sender]].balance + msg.value;
     }    
 
 

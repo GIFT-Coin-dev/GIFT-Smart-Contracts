@@ -33,10 +33,10 @@ utilises the protocol it is overriden and his previous referrer earns his referr
 interface IReferrals {
     
     //Pays Referrer passed as initial uint user ID, value passed as msg.value. Returns the userID of the payee, if he is unregistered it registers him and pays it.
-    function payReferrerAndRegister(uint256, uint256) external payable returns(uint256);
+    function payReferrerAndRegister(uint256) external payable returns(uint256);
     
     //Pays Referrer passed as initial uint user ID, value passed as msg.value.
-    function payReferrer(uint256, uint256) external payable;
+    function payReferrer(uint256) external payable;
     
     //Allows a user to change the referrer address to 
     function changeReferrerAddress(address) external;
