@@ -980,526 +980,6 @@ library EnumerableSet {
 }
 
 /**
- * @dev Wrappers over Solidity's arithmetic operations with added overflow
- * checks.
- *
- * Arithmetic operations in Solidity wrap on overflow. This can easily result
- * in bugs, because programmers usually assume that an overflow raises an
- * error, which is the standard behavior in high level programming languages.
- * `SafeMath` restores this intuition by reverting the transaction when an
- * operation overflows.
- *
- * Using this library instead of the unchecked operations eliminates an entire
- * class of bugs, so it's recommended to use it always.
- */
-library SafeMathChainlink {
-  /**
-    * @dev Returns the addition of two unsigned integers, reverting on
-    * overflow.
-    *
-    * Counterpart to Solidity's `+` operator.
-    *
-    * Requirements:
-    * - Addition cannot overflow.
-    */
-  function add(
-    uint256 a,
-    uint256 b
-  )
-    internal
-    pure
-    returns (
-      uint256
-    )
-  {
-    uint256 c = a + b;
-    require(c >= a, "SafeMath: addition overflow");
-
-    return c;
-  }
-
-  /**
-    * @dev Returns the subtraction of two unsigned integers, reverting on
-    * overflow (when the result is negative).
-    *
-    * Counterpart to Solidity's `-` operator.
-    *
-    * Requirements:
-    * - Subtraction cannot overflow.
-    */
-  function sub(
-    uint256 a,
-    uint256 b
-  )
-    internal
-    pure
-    returns (
-      uint256
-    )
-  {
-    require(b <= a, "SafeMath: subtraction overflow");
-    uint256 c = a - b;
-
-    return c;
-  }
-
-  /**
-    * @dev Returns the multiplication of two unsigned integers, reverting on
-    * overflow.
-    *
-    * Counterpart to Solidity's `*` operator.
-    *
-    * Requirements:
-    * - Multiplication cannot overflow.
-    */
-  function mul(
-    uint256 a,
-    uint256 b
-  )
-    internal
-    pure
-    returns (
-      uint256
-    )
-  {
-    // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
-    // benefit is lost if 'b' is also tested.
-    // See: https://github.com/OpenZeppelin/openzeppelin-solidity/pull/522
-    if (a == 0) {
-      return 0;
-    }
-
-    uint256 c = a * b;
-    require(c / a == b, "SafeMath: multiplication overflow");
-
-    return c;
-  }
-
-  /**
-    * @dev Returns the integer division of two unsigned integers. Reverts on
-    * division by zero. The result is rounded towards zero.
-    *
-    * Counterpart to Solidity's `/` operator. Note: this function uses a
-    * `revert` opcode (which leaves remaining gas untouched) while Solidity
-    * uses an invalid opcode to revert (consuming all remaining gas).
-    *
-    * Requirements:
-    * - The divisor cannot be zero.
-    */
-  function div(
-    uint256 a,
-    uint256 b
-  )
-    internal
-    pure
-    returns (
-      uint256
-    )
-  {
-    // Solidity only automatically asserts when dividing by 0
-    require(b > 0, "SafeMath: division by zero");
-    uint256 c = a / b;
-    // assert(a == b * c + a % b); // There is no case in which this doesn't hold
-
-    return c;
-  }
-
-  /**
-    * @dev Returns the remainder of dividing two unsigned integers. (unsigned integer modulo),
-    * Reverts when dividing by zero.
-    *
-    * Counterpart to Solidity's `%` operator. This function uses a `revert`
-    * opcode (which leaves remaining gas untouched) while Solidity uses an
-    * invalid opcode to revert (consuming all remaining gas).
-    *
-    * Requirements:
-    * - The divisor cannot be zero.
-    */
-  function mod(
-    uint256 a,
-    uint256 b
-  )
-    internal
-    pure
-    returns (
-      uint256
-    )
-  {
-    require(b != 0, "SafeMath: modulo by zero");
-    return a % b;
-  }
-}
-
-interface LinkTokenInterface {
-
-  function allowance(
-    address owner,
-    address spender
-  )
-    external
-    view
-    returns (
-      uint256 remaining
-    );
-
-  function approve(
-    address spender,
-    uint256 value
-  )
-    external
-    returns (
-      bool success
-    );
-
-  function balanceOf(
-    address owner
-  )
-    external
-    view
-    returns (
-      uint256 balance
-    );
-
-  function decimals()
-    external
-    view
-    returns (
-      uint8 decimalPlaces
-    );
-
-  function decreaseApproval(
-    address spender,
-    uint256 addedValue
-  )
-    external
-    returns (
-      bool success
-    );
-
-  function increaseApproval(
-    address spender,
-    uint256 subtractedValue
-  ) external;
-
-  function name()
-    external
-    view
-    returns (
-      string memory tokenName
-    );
-
-  function symbol()
-    external
-    view
-    returns (
-      string memory tokenSymbol
-    );
-
-  function totalSupply()
-    external
-    view
-    returns (
-      uint256 totalTokensIssued
-    );
-
-  function transfer(
-    address to,
-    uint256 value
-  )
-    external
-    returns (
-      bool success
-    );
-
-  function transferAndCall(
-    address to,
-    uint256 value,
-    bytes calldata data
-  )
-    external
-    returns (
-      bool success
-    );
-
-  function transferFrom(
-    address from,
-    address to,
-    uint256 value
-  )
-    external
-    returns (
-      bool success
-    );
-
-}
-
-contract VRFRequestIDBase {
-
-  /**
-   * @notice returns the seed which is actually input to the VRF coordinator
-   *
-   * @dev To prevent repetition of VRF output due to repetition of the
-   * @dev user-supplied seed, that seed is combined in a hash with the
-   * @dev user-specific nonce, and the address of the consuming contract. The
-   * @dev risk of repetition is mostly mitigated by inclusion of a blockhash in
-   * @dev the final seed, but the nonce does protect against repetition in
-   * @dev requests which are included in a single block.
-   *
-   * @param _userSeed VRF seed input provided by user
-   * @param _requester Address of the requesting contract
-   * @param _nonce User-specific nonce at the time of the request
-   */
-  function makeVRFInputSeed(
-    bytes32 _keyHash,
-    uint256 _userSeed,
-    address _requester,
-    uint256 _nonce
-  )
-    internal
-    pure
-    returns (
-      uint256
-    )
-  {
-    return uint256(keccak256(abi.encode(_keyHash, _userSeed, _requester, _nonce)));
-  }
-
-  /**
-   * @notice Returns the id for this request
-   * @param _keyHash The serviceAgreement ID to be used for this request
-   * @param _vRFInputSeed The seed to be passed directly to the VRF
-   * @return The id for this request
-   *
-   * @dev Note that _vRFInputSeed is not the seed passed by the consuming
-   * @dev contract, but the one generated by makeVRFInputSeed
-   */
-  function makeRequestId(
-    bytes32 _keyHash,
-    uint256 _vRFInputSeed
-  )
-    internal
-    pure
-    returns (
-      bytes32
-    )
-  {
-    return keccak256(abi.encodePacked(_keyHash, _vRFInputSeed));
-  }
-}
-
-/** ****************************************************************************
- * @notice Interface for contracts using VRF randomness
- * *****************************************************************************
- * @dev PURPOSE
- *
- * @dev Reggie the Random Oracle (not his real job) wants to provide randomness
- * @dev to Vera the verifier in such a way that Vera can be sure he's not
- * @dev making his output up to suit himself. Reggie provides Vera a public key
- * @dev to which he knows the secret key. Each time Vera provides a seed to
- * @dev Reggie, he gives back a value which is computed completely
- * @dev deterministically from the seed and the secret key.
- *
- * @dev Reggie provides a proof by which Vera can verify that the output was
- * @dev correctly computed once Reggie tells it to her, but without that proof,
- * @dev the output is indistinguishable to her from a uniform random sample
- * @dev from the output space.
- *
- * @dev The purpose of this contract is to make it easy for unrelated contracts
- * @dev to talk to Vera the verifier about the work Reggie is doing, to provide
- * @dev simple access to a verifiable source of randomness.
- * *****************************************************************************
- * @dev USAGE
- *
- * @dev Calling contracts must inherit from VRFConsumerBase, and can
- * @dev initialize VRFConsumerBase's attributes in their constructor as
- * @dev shown:
- *
- * @dev   contract VRFConsumer {
- * @dev     constuctor(<other arguments>, address _vrfCoordinator, address _link)
- * @dev       VRFConsumerBase(_vrfCoordinator, _link) public {
- * @dev         <initialization with other arguments goes here>
- * @dev       }
- * @dev   }
- *
- * @dev The oracle will have given you an ID for the VRF keypair they have
- * @dev committed to (let's call it keyHash), and have told you the minimum LINK
- * @dev price for VRF service. Make sure your contract has sufficient LINK, and
- * @dev call requestRandomness(keyHash, fee, seed), where seed is the input you
- * @dev want to generate randomness from.
- *
- * @dev Once the VRFCoordinator has received and validated the oracle's response
- * @dev to your request, it will call your contract's fulfillRandomness method.
- *
- * @dev The randomness argument to fulfillRandomness is the actual random value
- * @dev generated from your seed.
- *
- * @dev The requestId argument is generated from the keyHash and the seed by
- * @dev makeRequestId(keyHash, seed). If your contract could have concurrent
- * @dev requests open, you can use the requestId to track which seed is
- * @dev associated with which randomness. See VRFRequestIDBase.sol for more
- * @dev details. (See "SECURITY CONSIDERATIONS" for principles to keep in mind,
- * @dev if your contract could have multiple requests in flight simultaneously.)
- *
- * @dev Colliding `requestId`s are cryptographically impossible as long as seeds
- * @dev differ. (Which is critical to making unpredictable randomness! See the
- * @dev next section.)
- *
- * *****************************************************************************
- * @dev SECURITY CONSIDERATIONS
- *
- * @dev A method with the ability to call your fulfillRandomness method directly
- * @dev could spoof a VRF response with any random value, so it's critical that
- * @dev it cannot be directly called by anything other than this base contract
- * @dev (specifically, by the VRFConsumerBase.rawFulfillRandomness method).
- *
- * @dev For your users to trust that your contract's random behavior is free
- * @dev from malicious interference, it's best if you can write it so that all
- * @dev behaviors implied by a VRF response are executed *during* your
- * @dev fulfillRandomness method. If your contract must store the response (or
- * @dev anything derived from it) and use it later, you must ensure that any
- * @dev user-significant behavior which depends on that stored value cannot be
- * @dev manipulated by a subsequent VRF request.
- *
- * @dev Similarly, both miners and the VRF oracle itself have some influence
- * @dev over the order in which VRF responses appear on the blockchain, so if
- * @dev your contract could have multiple VRF requests in flight simultaneously,
- * @dev you must ensure that the order in which the VRF responses arrive cannot
- * @dev be used to manipulate your contract's user-significant behavior.
- *
- * @dev Since the ultimate input to the VRF is mixed with the block hash of the
- * @dev block in which the request is made, user-provided seeds have no impact
- * @dev on its economic security properties. They are only included for API
- * @dev compatability with previous versions of this contract.
- *
- * @dev Since the block hash of the block which contains the requestRandomness
- * @dev call is mixed into the input to the VRF *last*, a sufficiently powerful
- * @dev miner could, in principle, fork the blockchain to evict the block
- * @dev containing the request, forcing the request to be included in a
- * @dev different block with a different hash, and therefore a different input
- * @dev to the VRF. However, such an attack would incur a substantial economic
- * @dev cost. This cost scales with the number of blocks the VRF oracle waits
- * @dev until it calls responds to a request.
- */
-abstract contract VRFConsumerBase is VRFRequestIDBase {
-
-  using SafeMathChainlink for uint256;
-
-  /**
-   * @notice fulfillRandomness handles the VRF response. Your contract must
-   * @notice implement it. See "SECURITY CONSIDERATIONS" above for important
-   * @notice principles to keep in mind when implementing your fulfillRandomness
-   * @notice method.
-   *
-   * @dev VRFConsumerBase expects its subcontracts to have a method with this
-   * @dev signature, and will call it once it has verified the proof
-   * @dev associated with the randomness. (It is triggered via a call to
-   * @dev rawFulfillRandomness, below.)
-   *
-   * @param requestId The Id initially returned by requestRandomness
-   * @param randomness the VRF output
-   */
-  function fulfillRandomness(
-    bytes32 requestId,
-    uint256 randomness
-  )
-    internal
-    virtual;
-
-  /**
-   * @dev In order to keep backwards compatibility we have kept the user
-   * seed field around. We remove the use of it because given that the blockhash
-   * enters later, it overrides whatever randomness the used seed provides.
-   * Given that it adds no security, and can easily lead to misunderstandings,
-   * we have removed it from usage and can now provide a simpler API.
-   */
-  uint256 constant private USER_SEED_PLACEHOLDER = 0;
-
-  /**
-   * @notice requestRandomness initiates a request for VRF output given _seed
-   *
-   * @dev The fulfillRandomness method receives the output, once it's provided
-   * @dev by the Oracle, and verified by the vrfCoordinator.
-   *
-   * @dev The _keyHash must already be registered with the VRFCoordinator, and
-   * @dev the _fee must exceed the fee specified during registration of the
-   * @dev _keyHash.
-   *
-   * @dev The _seed parameter is vestigial, and is kept only for API
-   * @dev compatibility with older versions. It can't *hurt* to mix in some of
-   * @dev your own randomness, here, but it's not necessary because the VRF
-   * @dev oracle will mix the hash of the block containing your request into the
-   * @dev VRF seed it ultimately uses.
-   *
-   * @param _keyHash ID of public key against which randomness is generated
-   * @param _fee The amount of LINK to send with the request
-   *
-   * @return requestId unique ID for this request
-   *
-   * @dev The returned requestId can be used to distinguish responses to
-   * @dev concurrent requests. It is passed as the first argument to
-   * @dev fulfillRandomness.
-   */
-  function requestRandomness(
-    bytes32 _keyHash,
-    uint256 _fee
-  )
-    internal
-    returns (
-      bytes32 requestId
-    )
-  {
-    LINK.transferAndCall(vrfCoordinator, _fee, abi.encode(_keyHash, USER_SEED_PLACEHOLDER));
-    // This is the seed passed to VRFCoordinator. The oracle will mix this with
-    // the hash of the block containing this request to obtain the seed/input
-    // which is finally passed to the VRF cryptographic machinery.
-    uint256 vRFSeed  = makeVRFInputSeed(_keyHash, USER_SEED_PLACEHOLDER, address(this), nonces[_keyHash]);
-    // nonces[_keyHash] must stay in sync with
-    // VRFCoordinator.nonces[_keyHash][this], which was incremented by the above
-    // successful LINK.transferAndCall (in VRFCoordinator.randomnessRequest).
-    // This provides protection against the user repeating their input seed,
-    // which would result in a predictable/duplicate output, if multiple such
-    // requests appeared in the same block.
-    nonces[_keyHash] = nonces[_keyHash].add(1);
-    return makeRequestId(_keyHash, vRFSeed);
-  }
-
-  LinkTokenInterface immutable internal LINK;
-  address immutable private vrfCoordinator;
-
-  // Nonces for each VRF key from which randomness has been requested.
-  //
-  // Must stay in sync with VRFCoordinator[_keyHash][this]
-  mapping(bytes32 /* keyHash */ => uint256 /* nonce */) private nonces;
-
-  /**
-   * @param _vrfCoordinator address of VRFCoordinator contract
-   * @param _link address of LINK token contract
-   *
-   * @dev https://docs.chain.link/docs/link-token-contracts
-   */
-  constructor(
-    address _vrfCoordinator,
-    address _link
-  ) {
-    vrfCoordinator = _vrfCoordinator;
-    LINK = LinkTokenInterface(_link);
-  }
-
-  // rawFulfillRandomness is called by VRFCoordinator when it receives a valid VRF
-  // proof. rawFulfillRandomness then calls fulfillRandomness, after validating
-  // the origin of the call
-  function rawFulfillRandomness(
-    bytes32 requestId,
-    uint256 randomness
-  )
-    external
-  {
-    require(msg.sender == vrfCoordinator, "Only VRFCoordinator can fulfill");
-    fulfillRandomness(requestId, randomness);
-  }
-}
-
-/**
  * @dev Contract module that helps prevent reentrant calls to a function.
  *
  * Inheriting from `ReentrancyGuard` will make the {nonReentrant} modifier
@@ -1715,11 +1195,13 @@ interface IGiftingHandler {
     //GIFTING
     function giftTokens(uint256 _option, bytes32 _hash, uint256 _referralID) external payable returns(uint256, uint256);
     function giftUsdVoucher(uint256 _option, bytes32 _hash, uint256 _referralID) external payable returns(uint256, uint256);
+    function giftBnbVoucher(uint256 _option, bytes32 _hash, uint256 _referralID) external payable returns(uint256, uint256);
     function giftNFT(bytes32 _hash, uint256 _referralID, address _nftAddress, uint256 _nftID) external payable returns(uint256, uint256);
     
     //RECOVERING
     function recoverGiftedTokens(uint256 _giftID) external;
     function recoverUSDVoucher(uint256 _giftID) external;
+    function recoverBnbVoucher(uint256 _giftID) external;
     function recoverNFT(uint256 _giftID) external;
     
     //GIFTING VIEW FUNCTIONS
@@ -1736,15 +1218,31 @@ interface IGiftingHandler {
     function viewGiftedUSDVouchers(uint256 _giftID) external view returns(uint256, bool );
     function viewGiftedUSDVouchersIndexes(address _sender) external view returns(uint256[] memory);
     
+    //GIFT BNB VOUCHERS
+    
+    function viewGiftedBNBVoucherOptionsLength() external view returns(uint256);
+    function viewGiftedBNBVoucherOption(uint256 _optionID) external view returns(uint256, uint256, uint256, uint256, uint256);
+    function viewGiftedBNBVouchers(uint256 _giftID) external view returns(uint256, bool );
+    function viewGiftedBNBVouchersIndexes(address _sender) external view returns(uint256[] memory);    
+    
     //GIFT NFTS
     function viewGiftedNFTs(uint256 _giftID) external view returns(address, uint256, bool);
     function viewGiftedNFTsIndexes(address _sender) external view returns(uint256[] memory);
     function viewGiftNFTCosts() external view returns(uint256, uint256, uint256, uint256);
 
-    //REFERRAL FUNCTIONS
+    
+}
+
+interface IReferralHandler {
+    
+    function payReferrer(uint256, uint256) external payable returns(uint256);
     function withdrawReferralFunds() external;
     function queryReferrerByAddress(address _referrer) external view returns(uint256, uint256, uint256, uint256, uint256, bool);
     
+}
+
+interface IGiftLottery {
+    function addToLottery(address payable, address payable) external;
 }
 
 contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
@@ -1812,6 +1310,39 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
     
     redeemUsdVoucherOption[] private redeemUsdVoucherOptionArr;
     
+    //GIFT BNB VOUCHERS DATA
+    
+    struct giftBnbVoucherOption {
+        
+        uint256 giftFee;
+        uint256 redeemRefundFee;
+        uint256 referralFee;
+        uint256 gasTopUp;
+        uint256 giftAmount;
+        uint256 bnbCost;
+        
+    }
+    
+    struct giftedBnbVoucher {
+        
+        uint256 option;
+        address payable sender;
+        bytes32 hash;
+        bool redeemed;
+        
+    }
+    
+    giftedBnbVoucher[] private giftedBnbVoucherArr;
+    giftBnbVoucherOption[] private giftBnbVoucherOptionArr;
+    mapping(address => uint256[]) private addyToGiftedBnbVoucherSent;
+    
+    struct redeemBnbVoucherOption {
+        address[] tokens;
+        uint256[] tokenWeights; 
+    }
+    
+    redeemUsdVoucherOption[] private redeemBnbVoucherOptionArr;    
+    
     //GIFT NFT DATA
     
     struct giftedNFT {
@@ -1834,24 +1365,11 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
     
     //LOTTERY DATA
     
-    GIFTLottery lottery;
-        
+    IGiftLottery lottery;
         
     //REFERRALS DATA
     
-    struct referrer {
-
-        uint256 balance;
-        uint256 totalEarned;
-        uint256 referrals;
-        uint256 referralSales;
-    }    
-    
-    mapping(address => uint256) private refaddyToUID;
-    mapping(address => uint256) private customerToReferrerUID;
-    mapping(uint256 => referrer) private UIDToReferrer;
-    
-    uint256 private currentID;
+    IReferralHandler referrals;
     
     //BALANCE COUNTERS
     
@@ -1889,7 +1407,7 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
     
     //CONSTRUCTOR 
     
-    constructor(address payable _marketing, address _giftToken, uint256 _NFTRedeemRefund, uint256 _NFTGasTopUp)  {
+    constructor(address _giftToken, uint256 _NFTRedeemRefund, uint256 _NFTGasTopUp, address _lottery, address _referral)  {
         
         //Balance INITIALIZATION
 
@@ -1911,10 +1429,10 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         manager = msg.sender;
         buybackAdmin = msg.sender;
         
-        //REFERAL INITIALIZATION;
-        currentID = 2;
-        refaddyToUID[_marketing] = 1;
-        UIDToReferrer[1] = referrer(0, 0, 0, 0);
+        //INTERFACE INITIALIZATION;
+        
+        referrals = IReferralHandler(_referral);
+        lottery = IGiftLottery(_lottery);
         
         //PANCAKESWAP INITIALIZATION
         _pancakeRouter = IPancakeRouter02(PancakeRouter);
@@ -1922,8 +1440,6 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         //TOKEN INITIALIZATION
         giftTokenAddress = _giftToken;
         giftToken = IERC20(giftTokenAddress);
-        
-        lottery = new GIFTLottery(_giftToken, address(this), 0x747973a5A2a4Ae1D3a8fDF5479f1514F65Db9C31, 0x404460C6A5EdE2D891e8297795264fDe62ADBB75, 0xc251acd21ec4fb7f31bb8868288bfdbaeb4fbfec2df3735ddbd4f7dc8d60103c, 0.2 * 10 ** 18);
         
     }
     
@@ -2020,8 +1536,10 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         giftedTokensArr.push(giftedTokens(_option, msg.sender, _hash, false));
         addyToGiftedTokensSent[msg.sender].push(giftedTokensArr.length-1);
         bnbGiftFeesBalance = bnbGiftFeesBalance.add(giftedTokensOptionsArr[_option].giftFee);
+        
+        
        
-        return(giftedTokensArr.length-1, payReferrer(_referralID, giftedTokensOptionsArr[_option].referralFee));
+        return(giftedTokensArr.length-1, referrals.payReferrer{value: giftedTokensOptionsArr[_option].referralFee}(_referralID, giftedTokensOptionsArr[_option].referralFee));
        
     }
     
@@ -2037,7 +1555,19 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         addyToGiftedUsdVoucherSent[msg.sender].push(giftedUsdVoucherArr.length-1);
         bnbGiftFeesBalance = bnbGiftFeesBalance.add(giftUsdVoucherOptionArr[_option].giftFee);
         
-        return(giftedUsdVoucherArr.length-1, payReferrer(_referralID, giftUsdVoucherOptionArr[_option].referralFee));
+        return(giftedUsdVoucherArr.length-1, referrals.payReferrer{value: giftUsdVoucherOptionArr[_option].referralFee}(_referralID, giftUsdVoucherOptionArr[_option].referralFee));
+    }
+    
+    function giftBnbVoucher(uint256 _option, bytes32 _hash, uint256 _referralID) external payable nonReentrant override returns(uint256, uint256) {
+        
+        require(_option < giftBnbVoucherOptionArr.length, "NOT VALID OPTION");
+        require(msg.value == giftBnbVoucherOptionArr[_option].bnbCost, "INCORRECT COST");
+            
+        giftedBnbVoucherArr.push(giftedBnbVoucher(_option, msg.sender, _hash, false));
+        addyToGiftedBnbVoucherSent[msg.sender].push(giftedBnbVoucherArr.length-1);
+        bnbGiftFeesBalance = bnbGiftFeesBalance.add(giftBnbVoucherOptionArr[_option].giftFee);
+        
+        return(giftedBnbVoucherArr.length-1, referrals.payReferrer{value: giftBnbVoucherOptionArr[_option].referralFee}(_referralID, giftBnbVoucherOptionArr[_option].referralFee));
     }
     
     function giftNFT(bytes32 _hash, uint256 _referralID, address _nftAddress, uint256 _nftID) external payable nonReentrant override returns(uint256, uint256) {
@@ -2049,7 +1579,7 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         giftedNFTArr.push(giftedNFT(msg.sender, _nftAddress, _nftID, _hash, false));
         bnbGiftFeesBalance = bnbGiftFeesBalance.add(NFTGiftFee);
         
-        return(giftedNFTArr.length-1, payReferrer(_referralID, NFTReferralFee));
+        return(giftedNFTArr.length-1, referrals.payReferrer{value: NFTReferralFee}(_referralID, NFTReferralFee));
         
     }
     
@@ -2087,11 +1617,11 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         
     }
     
-    function redeemUSDVoucher(address payable _recipient, string memory _redemptionString, uint256 _giftID, uint256 _redeemUsdOption) external nonReentrant onlyRedeemer  {
+    function redeemUSDVoucher(address payable _recipient, string memory _redemptionString, uint256 _giftID, uint256 _redeemOption) external nonReentrant onlyRedeemer  {
 
         require(_giftID < giftedUsdVoucherArr.length, "NOT VALID GIFT");
         require(giftedUsdVoucherArr[_giftID].redeemed == false, "GIFT REDEEMED");
-        require(_redeemUsdOption < redeemUsdVoucherOptionArr.length, "NOT VALID REDEEM OPTION");
+        require(_redeemOption < redeemUsdVoucherOptionArr.length, "NOT VALID REDEEM OPTION");
         require(keccak256(abi.encodePacked(_redemptionString)) == giftedUsdVoucherArr[_giftID].hash, "WRONG REDEMPTION CODE");
         
         busdToken.approve(PancakeRouter, giftUsdVoucherOptionArr[giftedUsdVoucherArr[_giftID].option].giftAmount);
@@ -2099,11 +1629,11 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         path[0] = busdTokenAddress; //BUSD
             
             
-        for(uint256 i = 0; i<redeemUsdVoucherOptionArr[_redeemUsdOption].tokens.length; i++) {
-            path[1] = redeemUsdVoucherOptionArr[_redeemUsdOption].tokens[i];  //ChosenToken
+        for(uint256 i = 0; i<redeemUsdVoucherOptionArr[_redeemOption].tokens.length; i++) {
+            path[1] = redeemUsdVoucherOptionArr[_redeemOption].tokens[i];  //ChosenToken
     
             _pancakeRouter.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-                (giftUsdVoucherOptionArr[giftedUsdVoucherArr[_giftID].option].giftAmount.mul(redeemUsdVoucherOptionArr[_redeemUsdOption].tokenWeights[i])).div(100),
+                (giftUsdVoucherOptionArr[giftedUsdVoucherArr[_giftID].option].giftAmount.mul(redeemUsdVoucherOptionArr[_redeemOption].tokenWeights[i])).div(100),
                 0,
                 path,
                 _recipient,
@@ -2115,6 +1645,38 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         giftedUsdVoucherArr[_giftID].redeemed = true;
         
     }
+    
+    function redeemBnbVoucher(address payable _recipient, string memory _redemptionString, uint256 _giftID, uint256 _redeemOption) external nonReentrant onlyRedeemer  {
+
+        require(_giftID < giftedBnbVoucherArr.length, "NOT VALID GIFT");
+        require(giftedBnbVoucherArr[_giftID].redeemed == false, "GIFT REDEEMED");
+        require(_redeemOption < redeemBnbVoucherOptionArr.length, "NOT VALID REDEEM OPTION");
+        require(keccak256(abi.encodePacked(_redemptionString)) == giftedBnbVoucherArr[_giftID].hash, "WRONG REDEMPTION CODE");
+        
+        address[] memory path = new address[](2);
+        path[0] = _pancakeRouter.WETH(); //BNB
+            
+            
+        for(uint256 i = 0; i<redeemBnbVoucherOptionArr[_redeemOption].tokens.length; i++) {
+            path[1] = redeemUsdVoucherOptionArr[_redeemOption].tokens[i];  //ChosenToken
+            
+            if (path[0] == path[1]) {
+                _recipient.transfer(giftBnbVoucherOptionArr[giftedBnbVoucherArr[_giftID].option].giftAmount.mul(redeemBnbVoucherOptionArr[_redeemOption].tokenWeights[i]).div(100));
+                
+            } else {
+                _pancakeRouter.swapExactETHForTokensSupportingFeeOnTransferTokens{value: (giftBnbVoucherOptionArr[giftedBnbVoucherArr[_giftID].option].giftAmount.mul(redeemBnbVoucherOptionArr[_redeemOption].tokenWeights[i])).div(100)}(
+                0,
+                path,
+                _recipient,
+                block.timestamp+10
+                );   
+            }
+        }
+        
+        redeemGasAndRefund(giftBnbVoucherOptionArr[giftedBnbVoucherArr[_giftID].option].gasTopUp, giftBnbVoucherOptionArr[giftedBnbVoucherArr[_giftID].option].redeemRefundFee, giftedBnbVoucherArr[_giftID].sender, _recipient);
+        giftedBnbVoucherArr[_giftID].redeemed = true;
+        
+    }    
     
     function redeemNFT(address payable _recipient, string memory _redemptionString, uint256 _giftID) external nonReentrant onlyRedeemer  {
         
@@ -2163,6 +1725,18 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         
     }
     
+    function recoverBnbVoucher(uint256 _giftID) external nonReentrant override {
+        
+        require(msg.sender == giftedBnbVoucherArr[_giftID].sender, "NOT ORIGINAL SENDER");
+        require(giftedBnbVoucherArr[_giftID].redeemed == false, "ALREADY REDEEMED");
+        
+        msg.sender.transfer(giftBnbVoucherOptionArr[giftedBnbVoucherArr[_giftID].option].giftAmount);
+        
+        recoverGasAndRefund(giftBnbVoucherOptionArr[giftedBnbVoucherArr[_giftID].option].redeemRefundFee, giftBnbVoucherOptionArr[giftedBnbVoucherArr[_giftID].option].gasTopUp);
+        giftedBnbVoucherArr[_giftID].redeemed = true;
+        
+    }    
+    
     function recoverNFT(uint256 _giftID) external nonReentrant override {
         
         require(msg.sender == giftedNFTArr[_giftID].sender, "NOT ORIGINAL SENDER");
@@ -2185,7 +1759,7 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
     //VIEW GENERAL STATS
 
     function viewTotalGifts() external view returns(uint256) {
-        return(giftedTokensArr.length.add(giftedUsdVoucherArr.length).add(giftedNFTArr.length));
+        return(giftedTokensArr.length.add(giftedUsdVoucherArr.length).add(giftedBnbVoucherArr.length).add(giftedNFTArr.length));
     }
     
     //VIEW TOKEN GIFT INFO
@@ -2237,6 +1811,35 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
         return(redeemUsdVoucherOptionArr.length);
     }
     
+    //VIEW BNBVOUCHER GIFT INFO
+    
+    function viewGiftedBNBVoucherOptionsLength() external view override returns(uint256) {
+        return(giftBnbVoucherOptionArr.length);
+    }
+    
+    function viewGiftedBNBVoucherOption(uint256 _optionID) external view override returns(uint256, uint256, uint256, uint256, uint256) {
+        return(giftBnbVoucherOptionArr[_optionID].giftFee, giftBnbVoucherOptionArr[_optionID].referralFee, giftBnbVoucherOptionArr[_optionID].gasTopUp, giftBnbVoucherOptionArr[_optionID].redeemRefundFee, giftBnbVoucherOptionArr[_optionID].giftAmount);
+    }    
+    
+    function viewGiftedBNBVouchers(uint256 _giftID) external view override returns(uint256, bool ) {
+        
+        return(giftedBnbVoucherArr[_giftID].option, giftedBnbVoucherArr[_giftID].redeemed);
+    }
+    
+    function viewGiftedBNBVouchersIndexes(address _sender) external view override returns(uint256[] memory) {
+        
+        return(addyToGiftedBnbVoucherSent[_sender]);
+        
+    }
+    
+    function viewRedeemBNBVoucherOption(uint256 _optionID) external view returns(address[] memory, uint256[] memory) {
+        return(redeemBnbVoucherOptionArr[_optionID].tokens, redeemBnbVoucherOptionArr[_optionID].tokenWeights);
+    }
+    
+    function viewRedeemBNBVoucherOptionLength() external view returns(uint256) {
+        return(redeemBnbVoucherOptionArr.length);
+    }
+    
     //VIEW NFT GIFT INFO
     
     function viewGiftedNFTs(uint256 _giftID) external view override returns(address, uint256, bool){
@@ -2251,184 +1854,7 @@ contract GiftingHandler is IGiftingHandler, ReentrancyGuard {
     function viewGiftNFTCosts() external view override returns(uint256, uint256, uint256, uint256){
         return(NFTGiftFee, NFTRedeemRefundFee, NFTReferralFee, NFTGasTopUp);
     }
-    
-    //REFERRALS SECTION
-    
-    function payReferrer(uint256 _UID, uint256 _payment) internal returns(uint256){
-
-        if(customerToReferrerUID[msg.sender]==0) {
-
-            if(_UID == 0 || _UID >= currentID) {
-                customerToReferrerUID[msg.sender] = 1;
-            } else {
-                customerToReferrerUID[msg.sender] = _UID;
-            }
-            UIDToReferrer[customerToReferrerUID[msg.sender]].referrals++;
-        }
-        
-        UIDToReferrer[customerToReferrerUID[msg.sender]].referralSales++;
-        UIDToReferrer[customerToReferrerUID[msg.sender]].balance = UIDToReferrer[customerToReferrerUID[msg.sender]].balance + _payment;
-
-        if (refaddyToUID[msg.sender] == 0) {
-
-            return(registerReferrer());
-            
-        } else {
-
-            return(refaddyToUID[msg.sender]);
-        }
-    }
-    
-    function registerReferrer() public returns (uint256) {
-        
-        require(refaddyToUID[msg.sender]==0, "ALREADY REGISTERED");
-        refaddyToUID[msg.sender]=currentID;
-        UIDToReferrer[currentID] = referrer(0,0,0,0);
-        currentID++;
-        return refaddyToUID[msg.sender];
-        
-    }
-    
-    function changeReferrerAddress(address payable _newAddress) external  {
-        require(refaddyToUID[msg.sender] != 0, "WRONG ADDRESS");
-        require(refaddyToUID[_newAddress] == 0, "NEW ADDRESS TAKEN");
-
-        refaddyToUID[_newAddress] = refaddyToUID[msg.sender];
-        refaddyToUID[msg.sender] = 0;
-    }
-    
-    function withdrawReferralFunds() external nonReentrant override {
-        
-        require(refaddyToUID[msg.sender] != 0, "INVALID ADDRESS");
-        require(UIDToReferrer[refaddyToUID[msg.sender]].balance > 0, "BALANCE IS ZERO");
-        msg.sender.transfer(UIDToReferrer[refaddyToUID[msg.sender]].balance);
-        UIDToReferrer[refaddyToUID[msg.sender]].totalEarned = UIDToReferrer[refaddyToUID[msg.sender]].totalEarned + UIDToReferrer[refaddyToUID[msg.sender]].balance;
-        UIDToReferrer[refaddyToUID[msg.sender]].balance = 0;
-         
-    }
-    
-    //Returns data for referrer by address, if address in unregistered returns false
-    function queryReferrerByAddress(address _referrer) external view override returns(uint256, uint256, uint256, uint256, uint256, bool) {
-        if(refaddyToUID[_referrer] == 0) {
-            return(0,0,0,0,0, false);
-        } else {
-            return(refaddyToUID[_referrer], UIDToReferrer[refaddyToUID[_referrer]].balance, UIDToReferrer[refaddyToUID[_referrer]].totalEarned, UIDToReferrer[refaddyToUID[_referrer]].referrals, UIDToReferrer[refaddyToUID[_referrer]].referralSales, true);
-
-        }
-        
-    }
 
 }
 
-contract GIFTLottery is VRFConsumerBase{
-    
-    using SafeMath for uint256;
-    using SafeERC20 for IERC20;
-    
-    struct lotteryEntry {
-        address payable sender;
-        address payable recipient;
-    }
-    
-    lotteryEntry[] private entriesArr;
-    address payable winner1;
-    address payable winner2;
-    
-    address handler;
-    address lotteryAdmin;
-    address manager;
-    
-    address private giftTokenAddress;
-    IERC20 private giftToken;
-    
-    //CHAINLINK 
-    
-    bytes32 keyHash;
-    uint256 chainlinkFee;
-    
-    constructor(address _giftToken, address _handler, address _vrfCoordinator, address _link, bytes32 _keyHash, uint256 _fee) VRFConsumerBase(_vrfCoordinator, _link) {
-        
-        handler = _handler;
-        manager = tx.origin;
-        
-        //Chainlink INITIALIZATION
-        
-        chainlinkFee = _fee;
-        keyHash = _keyHash;
-        
-        giftTokenAddress = _giftToken;
-        giftToken = IERC20(giftTokenAddress);
-    }
-    
-    modifier onlyManager() {
-        require(msg.sender == manager, "NOT MANAGER");
-        _;
-    }
-
-    modifier onlyHandler() {
-        require(msg.sender == handler, "NOT HANDLER");
-        _;
-    }
-    
-    modifier onlyLotteryAdmin() {
-        require(msg.sender == lotteryAdmin, "NOT LOTTERY ADMIN");
-        _;
-    }
-    
-    function changeManager(address _manager) onlyManager external {
-        manager = _manager;
-    }
-    
-    function changeLotteryAdmin(address _lotteryAdmin) onlyManager external {
-        lotteryAdmin = _lotteryAdmin;
-    }
-    
-    function changeChainlinkFee(uint256 _fee) external onlyManager  {
-        chainlinkFee = _fee * 10 ** 18;
-    }
-    
-    function changeGiftToken(address _giftToken) external onlyManager {
-        giftTokenAddress = _giftToken;
-        giftToken = IERC20(giftTokenAddress);
-    }
-
-    function addToLottery(address payable _sender, address payable _redeemer) external onlyHandler{
-        
-        entriesArr.push(lotteryEntry(_sender, _redeemer));
-    }
-    
-    //This function calls the VRF Chainlink Coordinator to get a random number for the draw
-    function getLotteryNumber() external onlyLotteryAdmin  {
-        require(LINK.balanceOf(address(this)) >= chainlinkFee, "Not enough LINK - fill contract with faucet");
-        requestRandomness(keyHash, chainlinkFee);
-    }
-    
-    //This function decides the lottery result, takes the random number, sets the winners, sends the rewards and resets the lottery entries array
-    function fulfillRandomness(bytes32 requestId, uint256 randomness) internal override {
-        
-        
-        uint256 winnersIndex = randomness.mod(entriesArr.length);
-        uint256 lotteryFund = giftToken.balanceOf(address(this));
-        uint256 winAmount = giftToken.balanceOf(address(this)).div(2);
-        giftToken.safeTransfer(entriesArr[winnersIndex].sender, winAmount);
-        giftToken.safeTransfer(entriesArr[winnersIndex].recipient, lotteryFund.sub(winAmount));
-        winner1 = entriesArr[winnersIndex].sender;
-        winner2 = entriesArr[winnersIndex].recipient;
-        delete entriesArr;
-        
-    }
-    
-    function viewLotteryJackpot() external view returns(uint256) {
-
-        return(giftToken.balanceOf(address(this)));
-        
-    }
-    
-    function viewLotteryWinners() external view returns(address payable _sender, address payable _recipient) {
-        
-        return(winner1, winner2);
-    }
-    
-    
-}
 
