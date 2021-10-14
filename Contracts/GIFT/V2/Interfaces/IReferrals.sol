@@ -17,7 +17,7 @@
 // SPDX-License-Identifier: MIT
 // Author: Daniel Fong
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity >=0.6.0 <0.8.6;
 
 /*
 A smart contract interface to handle referrals for affiliate marketing in a decentralised manner, 
@@ -39,7 +39,7 @@ interface IReferrals {
     function payReferrer(uint256) external payable;
     
     //Allows a user to change the referrer address to 
-    function changeReferrerAddress(address) external;
+    function changeReferrerAddress(address payable) external;
     
     //Allows Referrer to withdraw his accrued funds
     function withdrawReferralFunds() external;
